@@ -142,6 +142,16 @@ mark{background:#ffe48a;color:#1b2321;border-radius:2px}
   .rc td[data-l]:not([data-l=""])::before{content:attr(data-l) ": ";color:var(--ink-3);font-size:12px}
   .rc td.prod{font-weight:700}
 }
+/* pdf viewer */
+.pdfbar{position:sticky;top:96px;z-index:5;display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:var(--bg);padding:8px 0}
+.pdfbar input{width:56px;padding:6px;border:1px solid var(--line);border-radius:8px;background:var(--surface);text-align:center}
+.pdfbar .btn{padding:6px 11px}
+#pp{overflow-x:auto}
+#pp .pg{margin:0 auto 12px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.18);position:relative}
+#pp .pg canvas{display:block;width:100%;height:auto}
+#pp .pg .pl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#888;font-size:13px}
+#pp .pg.target{outline:3px solid var(--warn)}
+@media (max-width:640px){.pdfbar{top:118px}}
 @media print{header.top,.toc,.noprint{display:none!important}main{padding:0}.card{box-shadow:none}}
 </style>
 </head>
@@ -208,6 +218,7 @@ async function unlock(pw){
   D = await decryptFile("data.enc", pw);
   PW = pw;
   D.byId = {}; D.products.forEach(p => D.byId[p.id] = p);
+  D.pdfSet = new Set(D.pdf?.ids || []);
   $("#login").classList.add("hidden"); $("#app").classList.remove("hidden");
   $("#bdate").textContent = "updated " + D.built.slice(0,10).split("-").reverse().join(".");
   route();
@@ -235,6 +246,8 @@ function copy(t){ navigator.clipboard?.writeText(t).then(()=>toast("Copied"), ()
 function citeChips(cites){
   return (cites||[]).map(c => `<button class="chip" data-cite='${esc(JSON.stringify(c))}' title="${esc(C(c.cid).t)}">📄 ${esc(C(c.cid).l)}${c.page?` · p${esc(c.page)}`:""}</button>`).join("");
 }
+const hasPdf = cid => !!(D && D.pdfSet && D.pdfSet.has(cid));
+const circHref = (cid, pg, q) => hasPdf(cid) ? `#/pdf/${cid}${pg?`?pg=${pg}`:""}` : `#/c/${cid}?${pg?`pg=${pg}&`:""}${q?`q=${encodeURIComponent(q)}`:""}`;
 function citeText(c){ const x=C(c.cid); return `${x.l}${c.page?`, page ${c.page}`:""} (${x.t})`; }
 function modal(html){ $("#mbox").innerHTML = html; $("#modal").classList.remove("hidden"); }
 function closeModal(){ $("#modal").classList.add("hidden"); }
@@ -249,7 +262,7 @@ document.addEventListener("click", e => {
     <div class="muted" style="font-size:13px">FY ${esc(x.fy)}${c.page?` · page ${esc(c.page)}`:""} · ${esc(x.p)} pages${x.m==="scanned"?" · scanned copy":""}</div>
     ${c.quote?`<blockquote>${esc(c.quote)}</blockquote>`:""}
     <div class="path" style="margin:10px 0">${esc(D.root + x.r.replace(/\//g,"\\"))}</div>
-    <div class="row"><a class="btn pri" href="#/c/${esc(c.cid)}${c.page?`?pg=${esc(c.page)}`:""}" data-close>Read circular</a>
+    <div class="row">${hasPdf(c.cid)?`<a class="btn pri" href="#/pdf/${esc(c.cid)}${c.page?`?pg=${esc(c.page)}`:""}" data-close>Open circular${c.page?` at page ${esc(c.page)}`:""}</a><a class="btn" href="#/c/${esc(c.cid)}${c.page?`?pg=${esc(c.page)}`:""}" data-close>Text view</a>`:`<a class="btn pri" href="#/c/${esc(c.cid)}${c.page?`?pg=${esc(c.page)}`:""}" data-close>Read circular text</a>`}
     <button class="btn" data-copy="${esc(citeText(c) + (c.quote?` – "${c.quote}"`:""))}">Copy citation</button>
     <button class="btn" data-copy="${esc(D.root + x.r.replace(/\//g,"\\"))}">Copy file path</button></div>`);
 });
@@ -264,7 +277,7 @@ function statusBadge(s){ return s==="active"?`<span class="badge ok">Active</spa
 window.addEventListener("hashchange", route);
 function route(){
   if(!D) return;
-  closeModal();
+  closeModal(); closePdf();
   const h = location.hash.slice(1) || "/";
   const [path, qs] = h.split("?"); const params = new URLSearchParams(qs||"");
   const parts = path.split("/").filter(Boolean);
@@ -275,6 +288,7 @@ function route(){
   if(parts[0]==="new") return viewNew();
   if(parts[0]==="search") return viewSearch(params.get("q")||"");
   if(parts[0]==="c") return viewCircular(parts[1], params);
+  if(parts[0]==="pdf") return viewPdf(parts[1], params);
   if(parts[0]==="about") return viewAbout();
   return viewHome();
 }
@@ -481,7 +495,7 @@ function viewNew(){
   if(CL.length) h += `<h2>Automatic updates</h2><div class="card">${CL.slice(0,30).map(x=>`<div class="rule"><div><b>${esc(fmtD(x.date))}</b> · ${esc(x.summary||"")}</div>
     ${(x.products||[]).length?`<div class="foot">Updated: ${x.products.map(id=>D.byId[id]?`<a href="#/p/${esc(id)}">${esc(D.byId[id].name)}</a>`:esc(id)).join(", ")}</div>`:""}
     ${(x.circulars||[]).length?`<div class="foot">${citeChips(x.circulars.map(cid=>({cid})))}</div>`:""}</div>`).join("")}</div>`;
-  h += `<h2>Latest circulars</h2><div class="card">${recent.map(([id,c])=>`<div class="hit" onclick="location.hash='#/c/${esc(id)}'"><b>${esc(c.l)}</b><div class="sn">${esc(c.t)}</div></div>`).join("")}</div>`;
+  h += `<h2>Latest circulars</h2><div class="card">${recent.map(([id,c])=>`<div class="hit" onclick="location.hash='${esc(circHref(id))}'"><b>${esc(c.l)}</b><div class="sn">${esc(c.t)}</div></div>`).join("")}</div>`;
   $("#view").innerHTML = h;
 }
 
@@ -520,7 +534,7 @@ async function viewSearch(q){
     }
     hits.sort((a,b)=>b.score-a.score || (b.c.d||"").localeCompare(a.c.d||""));
     $("#fts").innerHTML = hits.length ? `<div class="pad muted" style="font-size:13px">${hits.length} circulars, newest first</div>` + hits.slice(0,150).map(x=>{const pg=pageOf(x.txt,terms[0]);
-      return `<div class="hit" onclick="location.hash='#/c/${esc(x.id)}?q=${encodeURIComponent(q)}${pg?`&pg=${pg}`:""}'"><b>${esc(x.c.l)}</b> — ${esc(x.c.t)}<div class="sn">${x.txt?snippet(x.txt,terms):"(title match; scanned copy)"}</div></div>`}).join("") : `<div class="pad muted">No circular contains all these words.</div>`;
+      return `<div class="hit" onclick="location.hash='${esc(circHref(x.id, pg, q))}'"><b>${esc(x.c.l)}</b> — ${esc(x.c.t)}<div class="sn">${x.txt?snippet(x.txt,terms):"(title match; scanned copy)"}</div></div>`}).join("") : `<div class="pad muted">No circular contains all these words.</div>`;
   }catch(e){ $("#fts").innerHTML = `<div class="pad err">${esc(e.message)}</div>`; }
 }
 
@@ -531,7 +545,7 @@ async function viewCircular(cid, params){
   const used = D.products.filter(p => JSON.stringify(p).includes(cid));
   $("#view").innerHTML = `<div class="muted" style="font-size:13px"><a href="javascript:history.back()">‹ Back</a></div><h1>${esc(c.l)}</h1><p class="sub">${esc(c.t)}</p>
     <div class="path">${esc(D.root + c.r.replace(/\//g,"\\"))}</div>
-    <div class="row" style="margin:8px 0"><button class="btn" data-copy="${esc(D.root + c.r.replace(/\//g,"\\"))}">Copy file path</button></div>
+    <div class="row" style="margin:8px 0">${hasPdf(cid)?`<a class="btn pri" href="#/pdf/${esc(cid)}${params.get("pg")?`?pg=${esc(params.get("pg"))}`:""}">Open original PDF</a>`:`<span class="muted" style="font-size:13px">Original PDF not online (older circular)</span>`}<button class="btn" data-copy="${esc(D.root + c.r.replace(/\//g,"\\"))}">Copy file path</button></div>
     ${used.length?`<p class="sub" style="font-size:13.5px">Used in: ${used.map(p=>`<a href="#/p/${esc(p.id)}">${esc(p.name)}</a>`).join(", ")}</p>`:""}
     <div class="card" id="rd"><div class="pad muted"><span class="spinner"></span> Loading text…</div></div>`;
   try{
@@ -547,10 +561,86 @@ async function viewCircular(cid, params){
   }catch(e){ $("#rd").innerHTML = `<div class="pad err">${esc(e.message)}</div>`; }
 }
 
+/* ---------- PDF viewer (decrypts docs/pdf/<id>.enc, renders with pdf.js) ---------- */
+const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+let PDFKEY = null, pdfjsP = null, CUR = null;
+function loadPdfJs(){
+  if(!pdfjsP) pdfjsP = new Promise((ok, bad) => { const s = document.createElement("script"); s.src = PDFJS + "pdf.min.js";
+    s.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + "pdf.worker.min.js"; ok(window.pdfjsLib); };
+    s.onerror = () => { pdfjsP = null; bad(new Error("Could not load the PDF viewer. Check your internet connection.")); }; document.head.appendChild(s); });
+  return pdfjsP;
+}
+async function pdfKey(){
+  if(PDFKEY) return PDFKEY;
+  const salt = new Uint8Array(D.pdf.salt.match(/../g).map(x => parseInt(x, 16)));
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(PW), "PBKDF2", false, ["deriveKey"]);
+  return (PDFKEY = await crypto.subtle.deriveKey({name:"PBKDF2", salt, iterations:310000, hash:"SHA-256"}, base, {name:"AES-GCM", length:256}, false, ["decrypt"]));
+}
+async function fetchPdf(cid){
+  const res = await fetch(`pdf/${cid}.enc`); if(!res.ok) throw new Error("PDF not found online ("+res.status+")");
+  const buf = new Uint8Array(await res.arrayBuffer());
+  if(String.fromCharCode(...buf.slice(0,4)) !== "JRP1") throw new Error("Bad PDF file");
+  return crypto.subtle.decrypt({name:"AES-GCM", iv:buf.slice(4,16)}, await pdfKey(), buf.slice(16));
+}
+function closePdf(){ if(CUR){ CUR.io?.disconnect(); CUR.so?.disconnect(); CUR.doc?.destroy(); if(CUR.url) URL.revokeObjectURL(CUR.url); CUR = null; } }
+async function viewPdf(cid, params){
+  setTab("search");
+  const c = D.circulars[cid]; if(!c){ $("#view").innerHTML = `<p>Unknown circular.</p>`; return; }
+  const target = Math.max(1, parseInt(params.get("pg")) || 1);
+  if(!hasPdf(cid)){ location.replace(`#/c/${cid}${params.get("pg")?`?pg=${params.get("pg")}`:""}`); return; }
+  const used = D.products.filter(p => JSON.stringify(p).includes(cid));
+  $("#view").innerHTML = `<div class="muted" style="font-size:13px"><a href="javascript:history.back()">‹ Back</a></div>
+    <h1>${esc(c.l)}</h1><p class="sub" style="margin:0">${esc(c.t)}</p>
+    ${used.length?`<p class="sub" style="font-size:13.5px;margin:4px 0 0">Used in: ${used.map(p=>`<a href="#/p/${esc(p.id)}">${esc(p.name)}</a>`).join(", ")}</p>`:""}
+    <div class="pdfbar noprint"><button class="btn" id="pprev" aria-label="Previous page">‹</button>
+      <input id="pnum" inputmode="numeric" value="${target}" aria-label="Page number"><span class="muted" id="ptot">/ ${esc(c.p)}</span>
+      <button class="btn" id="pnext" aria-label="Next page">›</button>
+      <button class="btn" id="zout" aria-label="Zoom out">−</button><button class="btn" id="zin" aria-label="Zoom in">+</button>
+      <a class="btn" href="#/c/${esc(cid)}?pg=${target}">Text view</a><a class="btn" id="pdl" download="${esc(c.t)}.pdf">Download</a></div>
+    <div id="pp"><div class="pad muted"><span class="spinner"></span> Opening circular…</div></div>`;
+  closePdf(); const me = CUR = {zoom:1};
+  try{
+    const [lib, buf] = await Promise.all([loadPdfJs(), fetchPdf(cid)]);
+    if(CUR !== me) return;
+    me.url = URL.createObjectURL(new Blob([buf], {type:"application/pdf"})); $("#pdl").href = me.url;
+    me.doc = await lib.getDocument({data: new Uint8Array(buf.slice(0))}).promise;
+    const N = me.doc.numPages; $("#ptot").textContent = "/ " + N;
+    const first = (await me.doc.getPage(1)).getViewport({scale:1}), ratio = first.height / first.width;
+    const pp = $("#pp");
+    const render = async div => {
+      if(div.dataset.done) return; div.dataset.done = "1";
+      const page = await me.doc.getPage(+div.dataset.n); if(CUR !== me) return;
+      const vp1 = page.getViewport({scale:1}), scale = me.w / vp1.width, dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const vp = page.getViewport({scale: scale * dpr}), cv = document.createElement("canvas");
+      cv.width = vp.width; cv.height = vp.height;
+      await page.render({canvasContext: cv.getContext("2d"), viewport: vp}).promise;
+      if(CUR !== me) return;
+      div.style.height = "auto"; div.innerHTML = ""; div.appendChild(cv);
+    };
+    const layout = () => {
+      const w = Math.round(Math.min(pp.clientWidth, 900) * me.zoom); me.w = w;
+      pp.innerHTML = Array.from({length:N}, (_, i) => `<div class="pg${i+1===target?" target":""}" id="pp-${i+1}" data-n="${i+1}" style="width:${w}px;height:${Math.round(w*ratio)}px"><div class="pl">Page ${i+1}</div></div>`).join("");
+      me.io?.disconnect(); me.so?.disconnect();
+      me.io = new IntersectionObserver(es => es.forEach(e => { if(e.isIntersecting) render(e.target); }), {rootMargin:"900px 0px"});
+      me.so = new IntersectionObserver(es => es.forEach(e => { if(e.isIntersecting) $("#pnum").value = e.target.dataset.n; }), {rootMargin:"-45% 0px -45% 0px"});
+      pp.querySelectorAll(".pg").forEach(d => { me.io.observe(d); me.so.observe(d); });
+    };
+    const go = n => { n = Math.min(Math.max(1, n || 1), N); const el = document.getElementById("pp-"+n);
+      if(el){ window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 160); } $("#pnum").value = n; };
+    layout(); setTimeout(() => go(target), 30);
+    $("#pprev").onclick = () => go(+$("#pnum").value - 1);
+    $("#pnext").onclick = () => go(+$("#pnum").value + 1);
+    $("#pnum").onchange = () => go(+$("#pnum").value);
+    const zoom = f => { const n = +$("#pnum").value; me.zoom = Math.min(3, Math.max(0.5, me.zoom * f)); layout(); setTimeout(() => go(n), 30); };
+    $("#zin").onclick = () => zoom(1.25); $("#zout").onclick = () => zoom(0.8);
+  }catch(e){ if(CUR === me) $("#pp").innerHTML = `<div class="pad err">${esc(e.message)}</div><div class="pad"><a class="btn" href="#/c/${esc(cid)}?pg=${target}">Read the text instead</a></div>`; }
+}
+
 function viewAbout(){
   setTab("about");
   $("#view").innerHTML = `<h1>About this rulebook</h1><div class="card pad">
    <p>Rules are taken from the bank's circulars and circular letters. Every rule cites the circular, its date and the page it comes from. Tap a citation to see the exact wording.</p>
+   <p><b>Original circulars.</b> "Open circular" shows the actual PDF at the cited page. Every circular a rule cites is online, along with all circulars of the current and previous financial year (${esc(D.pdf?.ids?.length||0)} PDFs, encrypted like the rest of the data). Older circulars open as text, and the file path on your PC is shown.</p>
    <p><b>Latest rule wins.</b> When a later circular changes a rule, the old version moves to "Earlier versions".</p>
    <p><b>Verify</b> marks rules where the source was unclear, scanned or conflicting. Check the original circular before relying on these.</p>
    <p>The rulebook updates automatically once a week from the circulars folder. Data built <b>${esc(D.built)}</b>.</p>

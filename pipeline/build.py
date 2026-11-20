@@ -40,6 +40,43 @@ def enc(obj, password, path):
     open(path, "wb").write(b"JRB1" + salt + iv + ct)
     return len(raw)
 
+def _fy(y): return f"{y}-{y+1}"
+_t = time.localtime(); _cur = _t.tm_year if _t.tm_mon >= 4 else _t.tm_year - 1
+PDF_YEARS = {_fy(_cur), _fy(_cur - 1)}   # rolling: current + previous FY uploaded in full, plus every cited circular
+
+def sync_pdfs(man, cited, password):
+    """Encrypt selected original PDFs into docs/pdf/<id>.enc (AES-256-GCM, key = PBKDF2(password, fixed salt)).
+    Incremental: a file is re-encrypted only when the source or the password changes."""
+    import hashlib
+    root = os.path.dirname(PROJ)
+    keyf = os.path.join(PRIV, "pdf_key.json")
+    kd = load(keyf) or {"salt": secrets.token_hex(16)}
+    salt = bytes.fromhex(kd["salt"])
+    pwh = hashlib.sha256(salt + password.encode()).hexdigest()
+    if kd.get("pwhash") != pwh:
+        kd = {"salt": kd["salt"], "pwhash": pwh}; json.dump(kd, open(keyf, "w"))
+    key = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt, iterations=ITER).derive(password.encode())
+    statef = os.path.join(PRIV, "pdf_state.json"); state = load(statef, {})
+    outdir = os.path.join(DOCS, "pdf"); os.makedirs(outdir, exist_ok=True)
+    want = [e for e in man if e["rel"].lower().endswith(".pdf")
+            and (e["id"] in cited or (e["fy"] in PDF_YEARS and not NOISE.search(e["title"])))]
+    keep, done, total = set(), 0, 0
+    for e in want:
+        src = os.path.join(root, e["rel"]); dst = os.path.join(outdir, e["id"] + ".enc")
+        tag = f"{e['sig']}|{pwh}"; keep.add(e["id"] + ".enc")
+        if state.get(e["id"]) != tag or not os.path.exists(dst):
+            raw = open(src, "rb").read()
+            iv = secrets.token_bytes(12)
+            open(dst, "wb").write(b"JRP1" + iv + AESGCM(key).encrypt(iv, raw, None))
+            state[e["id"]] = tag; done += 1
+        total += os.path.getsize(dst)
+    for f in os.listdir(outdir):
+        if f not in keep:
+            os.remove(os.path.join(outdir, f)); state.pop(f[:-4], None)
+    json.dump(state, open(statef, "w"))
+    print(f"pdfs: {len(keep)} online ({total/1e6:.0f} MB), {done} (re)encrypted")
+    return {"salt": kd["salt"], "ids": sorted(k[:-4] for k in keep)}
+
 def label(e):
     t = "CL" if e["type"] == "Circular Letter" else ("Cir" if e["type"] == "Circular" else "Doc")
     n = f" {e['number']}" if e.get("number") else ""
@@ -88,8 +125,10 @@ def main():
     circ = {e["id"]: {"l": label(e), "t": e["title"], "fy": e["fy"], "d": e.get("date", ""), "ty": e["type"],
                       "p": e["pages"], "r": e["rel"], "m": e["method"], "a": e.get("added", "")} for e in man}
 
+    pdf = sync_pdfs(man, cited, password)
     data = {
         "built": time.strftime("%Y-%m-%d %H:%M"),
+        "pdf": pdf,
         "products": products,
         "circulars": circ,
         "rates": load(os.path.join(PRIV, "products", "_rates.json")),
