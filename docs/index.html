@@ -121,6 +121,27 @@ mark{background:#ffe48a;color:#1b2321;border-radius:2px}
 .stat{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--ink-3);margin:6px 0 18px}
 .stat b{color:var(--ink);font-size:15px}
 .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:8px;font-size:14px;z-index:60}
+/* rate card */
+.rc td{font-size:13.5px}
+.rc .chip{font-size:11px;padding:1px 6px}
+.rc td:nth-child(5){white-space:nowrap}
+.rc .roi{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rc .basis{font-size:12px;color:var(--ink-3)}
+.rc tr.grp td{background:var(--surface-2);font-weight:700;font-size:12.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-2)}
+.rc thead th{position:sticky;top:0;background:var(--surface);z-index:1}
+.offer{display:inline-block;margin-top:3px;font-size:11.5px;font-weight:600;padding:1px 7px;border-radius:5px;background:var(--ok-soft);color:var(--ok)}
+.rcbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0 10px}
+.rcbar input{flex:1;min-width:180px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+@media (max-width:700px){
+  .rc,.rc tbody{display:block;width:100%}
+  .rc thead{display:none}
+  .rc tr{display:block;border-bottom:1px solid var(--line);padding:8px 12px}
+  .rc tr.grp{padding:0}
+  .rc td{display:block;border:0;padding:2px 0}
+  .rc td{overflow-wrap:anywhere}
+  .rc td[data-l]:not([data-l=""])::before{content:attr(data-l) ": ";color:var(--ink-3);font-size:12px}
+  .rc td.prod{font-weight:700}
+}
 @media print{header.top,.toc,.noprint{display:none!important}main{padding:0}.card{box-shadow:none}}
 </style>
 </head>
@@ -147,7 +168,7 @@ mark{background:#ffe48a;color:#1b2321;border-radius:2px}
   <nav class="tabs" id="tabs">
     <a href="#/" data-t="home">Products</a>
     <a href="#/check" data-t="check">Proposal checker</a>
-    <a href="#/rates" data-t="rates">Rates &amp; gold</a>
+    <a href="#/rates" data-t="rates">Rates &amp; charges</a>
     <a href="#/new" data-t="new">What's new</a>
     <a href="#/search" data-t="search">Search circulars</a>
     <a href="#/about" data-t="about">About</a>
@@ -396,11 +417,36 @@ function viewCheck(pid){
 }
 
 /* ---------- rates ---------- */
+function rateCardHtml(filter, grp){
+  const RC = D.ratecard; if(!RC || !(RC.rows||[]).length) return `<p class="muted">Rate card not built yet.</p>`;
+  const f = norm(filter);
+  const rows = RC.rows.filter(r => (!grp || r.group===grp) && (!f || norm([r.product,r.segment,r.roi,r.roi_basis,r.processing_fee,r.other_charges,r.concession].join(" ")).includes(f)));
+  const order = g => { const i = GROUP_ORDER.indexOf(g); return i<0?99:i; };
+  rows.sort((a,b)=>order(a.group)-order(b.group) || a.product.localeCompare(b.product));
+  let last = null, body = "";
+  for(const r of rows){
+    if(r.group!==last){ body += `<tr class="grp"><td colspan="6">${esc(r.group)}</td></tr>`; last = r.group; }
+    const live = r.concession && (!r.concession_till || r.concession_till >= new Date().toISOString().slice(0,10));
+    body += `<tr><td class="prod" data-l=""><a href="#/p/${esc(r.product_id)}">${esc(r.product)}</a>${r.segment?`<div class="basis">${esc(r.segment)}</div>`:""}</td>
+      <td data-l="ROI"><span class="roi">${esc(r.roi)}</span>${r.confidence&&r.confidence!=="high"?` <span class="badge ${r.confidence==="low"?"warn":""}" title="${esc(r.note||"")}">${r.confidence==="low"?"verify":"computed"}</span>`:""}${r.roi_basis?`<div class="basis">${esc(r.roi_basis)}</div>`:""}</td>
+      <td data-l="Processing fee">${esc(r.processing_fee||"")}${live?`<div><span class="offer">Offer: ${esc(r.concession)}</span></div>`:""}</td>
+      <td data-l="Other charges">${esc(r.other_charges||"")}</td>
+      <td data-l="w.e.f.">${esc(fmtD(r.effective))}</td>
+      <td data-l="">${citeChips((r.cite||[]).slice(0,1))}${(r.cite||[]).length>1?`<details class="old" style="margin-top:0"><summary>+${r.cite.length-1} more</summary>${citeChips(r.cite.slice(1))}</details>`:""}</td></tr>`;
+  }
+  return `<div class="card tblwrap"><table class="rc"><thead><tr><th>Product</th><th>Rate of interest</th><th>Processing fee</th><th>Other charges</th><th>w.e.f.</th><th>Circular</th></tr></thead><tbody>${body || `<tr><td colspan="6" class="muted">No product matches.</td></tr>`}</tbody></table></div>`;
+}
 function viewRates(){
   setTab("rates");
-  const R = D.rates, G = D.gold || [];
+  const R = D.rates, G = D.gold || [], RC = D.ratecard;
   const bench = D.byId["interest-rate-benchmarks"];
-  let h = `<h1>Rates &amp; gold value</h1>`;
+  const grps = RC ? [...new Set(RC.rows.map(r=>r.group))].sort((a,b)=>((GROUP_ORDER.indexOf(a)+99)%99)-((GROUP_ORDER.indexOf(b)+99)%99)) : [];
+  let h = `<h1>Rates &amp; charges</h1>
+    <p class="sub" style="margin-top:0">Interest rate and charges for each product from the latest rate circulars${RC?.as_of?`, as on ${esc(fmtD(RC.as_of))}`:""}. <b>Computed</b> means the rate was worked out from today's benchmark plus the spread in the circular.</p>
+    <div class="rcbar noprint"><input id="rcq" type="search" placeholder="Filter: product, CIBIL, slab…" aria-label="Filter rate card"><button class="btn" onclick="print()">Print</button></div>
+    <div class="filters noprint" id="rcg"><button class="on" data-g="">All</button>${grps.map(g=>`<button data-g="${esc(g)}">${esc(g)}</button>`).join("")}</div>
+    <div id="rct">${rateCardHtml("", "")}</div>
+    <h2 style="margin-top:34px">Benchmarks &amp; gold value</h2>`;
   if(R){
     const m = R.mclr || {};
     h += `<h2>Benchmark rates <span class="muted" style="font-size:13px;font-weight:400">as on ${esc(fmtD(R.as_of))}</span> ${R.cid?citeChips([{cid:R.cid}]):""}</h2>
@@ -420,6 +466,10 @@ function viewRates(){
   }
   if(!R && !G.length) h += `<p class="muted">No rate data yet.</p>`;
   $("#view").innerHTML = h;
+  let rcG = "";
+  const redraw = () => { $("#rct").innerHTML = rateCardHtml($("#rcq").value, rcG); };
+  $("#rcq").addEventListener("input", redraw);
+  document.querySelectorAll("#rcg button").forEach(b => b.onclick = () => { rcG = b.dataset.g; document.querySelectorAll("#rcg button").forEach(x=>x.classList.toggle("on", x===b)); redraw(); });
 }
 
 /* ---------- what's new ---------- */

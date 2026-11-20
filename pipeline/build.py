@@ -94,6 +94,7 @@ def main():
         "circulars": circ,
         "rates": load(os.path.join(PRIV, "products", "_rates.json")),
         "gold": load(os.path.join(PRIV, "products", "_gold_values.json"), []),
+        "ratecard": load(os.path.join(PRIV, "products", "_ratecard.json")),
         "changelog": load(os.path.join(PRIV, "changelog.json"), []),
         "root": "E:\\OneDrive\\5. ALL CIRCULARS\\",
     }

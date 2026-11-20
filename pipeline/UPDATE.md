@@ -22,6 +22,12 @@ Everything under `private/` is plaintext and gitignored; never commit it. Only `
      (a "revised" letter replaces the same month).
    - For an MCLR/EBLR/base-rate letter, move the current values of `private/products/_rates.json` into
      `history` and write the new ones.
+   - **Rate card.** `private/products/_ratecard.json` is the one-table quick reference of ROI and charges
+     (one row per product or rate slab: `roi`, `roi_basis`, `processing_fee`, `other_charges`, `concession`,
+     `concession_till`, `effective`, `cite`, `confidence`, `note`). Whenever a circular changes an interest rate,
+     spread, benchmark (MCLR/EBLR/base rate), processing fee or charge, or starts/ends a concession, update the
+     affected rows and `as_of`. When benchmarks change, recompute every benchmark-linked `roi` (confidence
+     "medium", formula in `roi_basis`). Remove concessions whose validity date has passed.
    - Mark rules that come from a scanned or unclear source with `"confidence": "low"`.
    - Validate every JSON file you touched with `python -c "import json,sys;json.load(open(sys.argv[1],encoding='utf-8'))" <file>`.
 
