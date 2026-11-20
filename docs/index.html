@@ -619,7 +619,7 @@ async function viewPdf(cid, params){
     };
     const layout = () => {
       const w = Math.round(Math.min(pp.clientWidth, 900) * me.zoom); me.w = w;
-      pp.innerHTML = Array.from({length:N}, (_, i) => `<div class="pg${i+1===target?" target":""}" id="pp-${i+1}" data-n="${i+1}" style="width:${w}px;height:${Math.round(w*ratio)}px"><div class="pl">Page ${i+1}</div></div>`).join("");
+      pp.innerHTML = Array.from({length:N}, (_, i) => `<div class="pg${i+1===target?" target":""}" id="pp-${i+1}" data-n="${i+1}" style="width:${w}px;height:${Math.round(w*ratio)}px"><div class="pl"><span><span class="spinner"></span> Loading page ${i+1}…</span></div></div>`).join("");
       me.io?.disconnect(); me.so?.disconnect();
       me.io = new IntersectionObserver(es => es.forEach(e => { if(e.isIntersecting) render(e.target); }), {rootMargin:"900px 0px"});
       me.so = new IntersectionObserver(es => es.forEach(e => { if(e.isIntersecting) $("#pnum").value = e.target.dataset.n; }), {rootMargin:"-45% 0px -45% 0px"});
