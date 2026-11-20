@@ -1,0 +1,5 @@
+# Plaintext bank data must never be committed. Only docs/data.enc (encrypted) is public.
+private/
+__pycache__/
+*.log
+.claude/

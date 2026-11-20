@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0f3d3e">
+<title>Loan Rulebook</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+:root{
+  --bg:#f5f6f3; --surface:#ffffff; --surface-2:#eef1ec; --ink:#1b2321; --ink-2:#4b5753; --ink-3:#7a8581;
+  --line:#dde2dc; --brand:#0f5c5e; --brand-ink:#ffffff; --brand-soft:#e1efee;
+  --ok:#1f7a4a; --ok-soft:#e3f3ea; --bad:#b3261e; --bad-soft:#fbe9e7; --warn:#8a5a00; --warn-soft:#fdf1d8;
+  --chip:#e9edf5; --chip-ink:#2b3d63; --shadow:0 1px 2px rgba(0,0,0,.05),0 2px 8px rgba(0,0,0,.04);
+  --r:10px; --mono:ui-monospace,SFMono-Regular,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#111615; --surface:#181f1e; --surface-2:#1f2826; --ink:#e7ecea; --ink-2:#b1bcb8; --ink-3:#83908b;
+  --line:#2b3633; --brand:#5fb3b0; --brand-ink:#0b1a1a; --brand-soft:#1d3433;
+  --ok:#6cc995; --ok-soft:#173226; --bad:#f08a80; --bad-soft:#3a1d1a; --warn:#e7b65a; --warn-soft:#3a2d12;
+  --chip:#243049; --chip-ink:#c9d6f5; --shadow:none;}}
+:root[data-theme="dark"]{
+  --bg:#111615; --surface:#181f1e; --surface-2:#1f2826; --ink:#e7ecea; --ink-2:#b1bcb8; --ink-3:#83908b;
+  --line:#2b3633; --brand:#5fb3b0; --brand-ink:#0b1a1a; --brand-soft:#1d3433;
+  --ok:#6cc995; --ok-soft:#173226; --bad:#f08a80; --bad-soft:#3a1d1a; --warn:#e7b65a; --warn-soft:#3a2d12;
+  --chip:#243049; --chip-ink:#c9d6f5; --shadow:none;}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;-webkit-text-size-adjust:100%}
+a{color:var(--brand)}
+button,input,select,textarea{font:inherit;color:inherit}
+.hidden{display:none!important}
+/* top bar */
+header.top{position:sticky;top:0;z-index:20;background:var(--brand);color:var(--brand-ink);box-shadow:var(--shadow)}
+.top-in{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:10px 16px}
+.brand{font-weight:700;letter-spacing:.2px;text-decoration:none;color:inherit;white-space:nowrap}
+.brand small{font-weight:500;opacity:.8;margin-left:6px}
+.qbox{flex:1;min-width:0}
+@media (max-width:640px){.top-in{flex-wrap:wrap;gap:8px}.qbox{flex-basis:100%}}
+.qbox input{width:100%;border:0;border-radius:8px;padding:9px 12px;background:rgba(255,255,255,.95);color:#1b2321}
+nav.tabs{max-width:1180px;margin:0 auto;display:flex;gap:4px;padding:0 12px 8px;overflow-x:auto;scrollbar-width:none}
+nav.tabs a{color:inherit;text-decoration:none;padding:6px 12px;border-radius:999px;white-space:nowrap;opacity:.85;font-size:14px}
+nav.tabs a.on{background:rgba(255,255,255,.18);opacity:1;font-weight:600}
+main{max-width:1180px;margin:0 auto;padding:18px 16px 80px}
+h1{font-size:24px;line-height:1.25;margin:4px 0 6px}
+h2{font-size:18px;margin:26px 0 10px}
+h3{font-size:15px;margin:0 0 6px}
+.muted{color:var(--ink-3)} .sub{color:var(--ink-2)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.pad{padding:14px 16px}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.pcard{display:block;text-decoration:none;color:inherit;padding:14px 16px;transition:border-color .15s}
+.pcard:hover{border-color:var(--brand)}
+.pcard .meta{font-size:12.5px;color:var(--ink-3);margin-top:6px}
+.badge{display:inline-block;font-size:11.5px;font-weight:600;padding:1px 8px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);vertical-align:middle}
+.badge.ok{background:var(--ok-soft);color:var(--ok)} .badge.bad{background:var(--bad-soft);color:var(--bad)} .badge.warn{background:var(--warn-soft);color:var(--warn)}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:2px 8px;border-radius:6px;background:var(--chip);color:var(--chip-ink);border:0;cursor:pointer;margin:2px 4px 2px 0;font-family:var(--mono)}
+.chip:hover{filter:brightness(.95)}
+.tag{display:inline-block;font-size:11.5px;padding:0 7px;border-radius:5px;border:1px solid var(--line);color:var(--ink-2);margin-right:4px}
+.filters{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.filters button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;cursor:pointer;font-size:13px}
+.filters button.on{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.layout{display:grid;grid-template-columns:220px 1fr;gap:24px;align-items:start}
+.toc{position:sticky;top:120px;font-size:13.5px}
+.toc a{display:block;padding:4px 10px;border-left:2px solid var(--line);color:var(--ink-2);text-decoration:none}
+.toc a:hover{border-color:var(--brand);color:var(--ink)}
+@media (max-width:860px){.layout{grid-template-columns:1fr}.toc{display:none}}
+.sec{scroll-margin-top:120px}
+.rule{padding:12px 16px;border-top:1px solid var(--line)}
+.rule:first-child{border-top:0}
+.rule .txt{white-space:pre-wrap}
+.rule .foot{margin-top:6px;display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:12.5px;color:var(--ink-3)}
+details.old{margin-top:6px;font-size:13px}
+details.old summary{cursor:pointer;color:var(--ink-3)}
+details.old .o{border-left:3px solid var(--line);padding:4px 10px;margin:6px 0;color:var(--ink-2)}
+.def{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.def>div{padding:12px 16px;border-top:1px solid var(--line)}
+.def .q{background:var(--bad-soft)} .def .a{background:var(--ok-soft)}
+.def .q b,.def .a b{display:block;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.def .q b{color:var(--bad)} .def .a b{color:var(--ok)}
+@media (max-width:640px){.def{grid-template-columns:1fr}}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 14px;cursor:pointer;text-decoration:none;color:var(--ink);font-size:14px}
+.btn.pri{background:var(--brand);border-color:var(--brand);color:var(--brand-ink);font-weight:600}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.lowconf{border-left:3px solid var(--warn)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-3);font-weight:600}
+td.num{font-variant-numeric:tabular-nums;text-align:right}
+.tblwrap{overflow-x:auto}
+/* forms */
+.form{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.form label{display:block;font-size:12.5px;color:var(--ink-2);margin-bottom:3px}
+.form input,.form select,select.big{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.res{display:grid;grid-template-columns:28px 1fr auto;gap:8px;padding:10px 14px;border-top:1px solid var(--line);align-items:start}
+.res .ic{font-weight:700;text-align:center;border-radius:6px;line-height:24px}
+.res.pass .ic{background:var(--ok-soft);color:var(--ok)} .res.fail .ic{background:var(--bad-soft);color:var(--bad)} .res.na .ic{background:var(--surface-2);color:var(--ink-3)}
+textarea.note{width:100%;min-height:260px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font:13px/1.5 var(--mono)}
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:50;padding:0}
+.modal .box{background:var(--surface);width:100%;max-width:640px;max-height:85vh;overflow:auto;border-radius:14px 14px 0 0;padding:18px}
+@media (min-width:700px){.modal{align-items:center}.modal .box{border-radius:14px}}
+blockquote{margin:10px 0;padding:8px 12px;border-left:3px solid var(--brand);background:var(--brand-soft);border-radius:0 8px 8px 0;white-space:pre-wrap}
+.path{font:12px var(--mono);word-break:break-all;background:var(--surface-2);padding:6px 8px;border-radius:6px}
+/* reader */
+.page{white-space:pre-wrap;font-size:14px;padding:14px 16px;border-top:1px solid var(--line);scroll-margin-top:120px}
+.page .pn{display:block;font-size:11.5px;font-weight:700;color:var(--ink-3);margin-bottom:6px}
+.page.target{background:var(--warn-soft)}
+mark{background:#ffe48a;color:#1b2321;border-radius:2px}
+.hit{padding:10px 14px;border-top:1px solid var(--line);cursor:pointer}
+.hit:hover{background:var(--surface-2)}
+.hit .sn{font-size:13px;color:var(--ink-2)}
+/* login */
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.login .card{max-width:380px;width:100%;padding:26px}
+.login input[type=password]{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);margin:10px 0}
+.err{color:var(--bad);font-size:13.5px;min-height:20px}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.stat{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--ink-3);margin:6px 0 18px}
+.stat b{color:var(--ink);font-size:15px}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:8px;font-size:14px;z-index:60}
+@media print{header.top,.toc,.noprint{display:none!important}main{padding:0}.card{box-shadow:none}}
+</style>
+</head>
+<body>
+<div id="login" class="login">
+  <div class="card">
+    <h1 style="margin-top:0">Loan Rulebook</h1>
+    <p class="sub" style="margin:0 0 6px">Loan product rules from bank circulars, with references. Enter the access password.</p>
+    <form id="lf">
+      <input type="password" id="pw" autocomplete="current-password" placeholder="Password" aria-label="Password" required>
+      <label class="sub" style="font-size:13.5px"><input type="checkbox" id="rem"> Remember on this device</label>
+      <div class="err" id="lerr"></div>
+      <button class="btn pri" style="width:100%;justify-content:center;margin-top:6px" id="lbtn">Unlock</button>
+    </form>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+<header class="top">
+  <div class="top-in">
+    <a class="brand" href="#/">Loan Rulebook<small id="bdate"></small></a>
+    <div class="qbox"><input id="q" type="search" placeholder="Search products, rules, circulars…" aria-label="Search"></div>
+  </div>
+  <nav class="tabs" id="tabs">
+    <a href="#/" data-t="home">Products</a>
+    <a href="#/check" data-t="check">Proposal checker</a>
+    <a href="#/rates" data-t="rates">Rates &amp; gold</a>
+    <a href="#/new" data-t="new">What's new</a>
+    <a href="#/search" data-t="search">Search circulars</a>
+    <a href="#/about" data-t="about">About</a>
+  </nav>
+</header>
+<main id="view"></main>
+</div>
+<div id="modal" class="modal hidden" role="dialog" aria-modal="true"><div class="box" id="mbox"></div></div>
+
+<script>
+"use strict";
+const $ = (s, r=document) => r.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const store = { get(k){try{return localStorage.getItem(k)}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,v)}catch(e){}}, del(k){try{localStorage.removeItem(k)}catch(e){}} };
+let D = null, TEXTS = null, PW = null, textsLoading = null;
+const SECTION_ORDER = ["eligibility","purpose","quantum","margin","roi","fees","tenure_repayment","security","guarantee_cover","credit_score","income_norms","documents","sanction_powers","restrictions","process","campaign","other"];
+const SECTION_NAMES = {eligibility:"Eligibility",purpose:"Purpose",quantum:"Loan amount",margin:"Margin",roi:"Rate of interest",fees:"Fees & charges",tenure_repayment:"Tenure & repayment",security:"Security / collateral",guarantee_cover:"Guarantee cover",credit_score:"Credit score",income_norms:"Income norms / FOIR",documents:"Documents",sanction_powers:"Sanctioning powers",restrictions:"Restrictions",process:"Process",campaign:"Campaigns & concessions",other:"Other"};
+const GROUP_ORDER = ["General Credit Norms","Housing","Vehicle","Personal & Education","Gold","Agriculture","MSME/SME","NRLM/SHG & Govt","Staff"];
+const CT_NAMES = {"salaried":"Salaried","self-employed":"Self-employed","professional":"Professional","pensioner":"Pensioner","farmer":"Farmer","nri":"NRI","staff":"Staff","shg":"SHG","firm-company":"Firm / company","others":"Others"};
+
+/* ---------- crypto ---------- */
+async function decryptFile(url, pw){
+  const res = await fetch(url, {cache:"no-cache"});
+  if(!res.ok) throw new Error("Could not download "+url+" ("+res.status+")");
+  const buf = new Uint8Array(await res.arrayBuffer());
+  if(String.fromCharCode(...buf.slice(0,4)) !== "JRB1") throw new Error("Bad data file");
+  const salt = buf.slice(4,20), iv = buf.slice(20,32), ct = buf.slice(32);
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveKey"]);
+  const key = await crypto.subtle.deriveKey({name:"PBKDF2", salt, iterations:310000, hash:"SHA-256"}, base, {name:"AES-GCM", length:256}, false, ["decrypt"]);
+  let plain;
+  try { plain = await crypto.subtle.decrypt({name:"AES-GCM", iv}, key, ct); }
+  catch(e){ const er = new Error("Wrong password"); er.pw = true; throw er; }
+  const stream = new Blob([plain]).stream().pipeThrough(new DecompressionStream("gzip"));
+  return JSON.parse(await new Response(stream).text());
+}
+async function unlock(pw){
+  D = await decryptFile("data.enc", pw);
+  PW = pw;
+  D.byId = {}; D.products.forEach(p => D.byId[p.id] = p);
+  $("#login").classList.add("hidden"); $("#app").classList.remove("hidden");
+  $("#bdate").textContent = "updated " + D.built.slice(0,10).split("-").reverse().join(".");
+  route();
+}
+function loadTexts(){
+  if(TEXTS) return Promise.resolve(TEXTS);
+  if(!textsLoading) textsLoading = decryptFile("search.enc", PW).then(t => (TEXTS = t));
+  return textsLoading;
+}
+$("#lf").addEventListener("submit", async e => {
+  e.preventDefault();
+  const pw = $("#pw").value; $("#lerr").textContent = ""; $("#lbtn").innerHTML = '<span class="spinner"></span> Unlocking';
+  try { await unlock(pw); if($("#rem").checked) store.set("jrb_pw", pw); }
+  catch(ex){ $("#lerr").textContent = ex.pw ? "Wrong password." : ex.message; }
+  $("#lbtn").textContent = "Unlock";
+});
+(async () => { const s = store.get("jrb_pw"); if(s){ try{ await unlock(s); }catch(e){ store.del("jrb_pw"); } } })();
+
+/* ---------- helpers ---------- */
+const C = cid => (D.circulars[cid] || {l:"Unknown ref", t:cid, r:""});
+const fmtD = d => d ? d.split("-").reverse().join(".") : "";
+const inr = n => n==null||n==="" ? "" : "₹" + Number(n).toLocaleString("en-IN");
+function toast(m){ const t=document.createElement("div"); t.className="toast"; t.textContent=m; document.body.appendChild(t); setTimeout(()=>t.remove(),1800); }
+function copy(t){ navigator.clipboard?.writeText(t).then(()=>toast("Copied"), ()=>toast("Copy failed")); }
+function citeChips(cites){
+  return (cites||[]).map(c => `<button class="chip" data-cite='${esc(JSON.stringify(c))}' title="${esc(C(c.cid).t)}">📄 ${esc(C(c.cid).l)}${c.page?` · p${esc(c.page)}`:""}</button>`).join("");
+}
+function citeText(c){ const x=C(c.cid); return `${x.l}${c.page?`, page ${c.page}`:""} (${x.t})`; }
+function modal(html){ $("#mbox").innerHTML = html; $("#modal").classList.remove("hidden"); }
+function closeModal(){ $("#modal").classList.add("hidden"); }
+$("#modal").addEventListener("click", e => { if(e.target.id==="modal" || e.target.closest("[data-close]")) closeModal(); });
+document.addEventListener("keydown", e => { if(e.key==="Escape") closeModal(); });
+document.addEventListener("click", e => { const cp = e.target.closest("[data-copy]"); if(cp) copy(cp.dataset.copy); });
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-cite]"); if(!b) return;
+  const c = JSON.parse(b.dataset.cite), x = C(c.cid);
+  modal(`<div class="row" style="justify-content:space-between"><b>${esc(x.l)}</b><button class="btn" data-close>Close</button></div>
+    <p class="sub" style="margin:6px 0">${esc(x.t)}</p>
+    <div class="muted" style="font-size:13px">FY ${esc(x.fy)}${c.page?` · page ${esc(c.page)}`:""} · ${esc(x.p)} pages${x.m==="scanned"?" · scanned copy":""}</div>
+    ${c.quote?`<blockquote>${esc(c.quote)}</blockquote>`:""}
+    <div class="path" style="margin:10px 0">${esc(D.root + x.r.replace(/\//g,"\\"))}</div>
+    <div class="row"><a class="btn pri" href="#/c/${esc(c.cid)}${c.page?`?pg=${esc(c.page)}`:""}" data-close>Read circular</a>
+    <button class="btn" data-copy="${esc(citeText(c) + (c.quote?` – "${c.quote}"`:""))}">Copy citation</button>
+    <button class="btn" data-copy="${esc(D.root + x.r.replace(/\//g,"\\"))}">Copy file path</button></div>`);
+});
+function setTab(t){ document.querySelectorAll("#tabs a").forEach(a => a.classList.toggle("on", a.dataset.t===t)); }
+function groups(){ const g={}; D.products.forEach(p => (g[p.group]=g[p.group]||[]).push(p));
+  return Object.keys(g).sort((a,b)=>((GROUP_ORDER.indexOf(a)+99)%99)-((GROUP_ORDER.indexOf(b)+99)%99)||a.localeCompare(b)).map(k=>[k,g[k].sort((a,b)=>a.name.localeCompare(b.name))]); }
+const ruleCount = p => (p.sections||[]).reduce((n,s)=>n+(s.rules||[]).length,0);
+const lowCount = p => (p.sections||[]).reduce((n,s)=>n+(s.rules||[]).filter(r=>r.confidence==="low").length,0);
+function statusBadge(s){ return s==="active"?`<span class="badge ok">Active</span>`: s==="discontinued"?`<span class="badge bad">Discontinued</span>`: s==="campaign-ended"?`<span class="badge warn">Campaign ended</span>`:`<span class="badge">${esc(s||"unclear")}</span>`; }
+
+/* ---------- router ---------- */
+window.addEventListener("hashchange", route);
+function route(){
+  if(!D) return;
+  closeModal();
+  const h = location.hash.slice(1) || "/";
+  const [path, qs] = h.split("?"); const params = new URLSearchParams(qs||"");
+  const parts = path.split("/").filter(Boolean);
+  window.scrollTo(0,0);
+  if(parts[0]==="p" && D.byId[parts[1]]) return viewProduct(D.byId[parts[1]], params);
+  if(parts[0]==="check") return viewCheck(parts[1]);
+  if(parts[0]==="rates") return viewRates();
+  if(parts[0]==="new") return viewNew();
+  if(parts[0]==="search") return viewSearch(params.get("q")||"");
+  if(parts[0]==="c") return viewCircular(parts[1], params);
+  if(parts[0]==="about") return viewAbout();
+  return viewHome();
+}
+let qT; $("#q").addEventListener("input", e => { clearTimeout(qT); const v=e.target.value; qT=setTimeout(()=>{ location.hash = "#/search?q="+encodeURIComponent(v); }, 250); });
+
+/* ---------- views ---------- */
+function viewHome(){
+  setTab("home");
+  const nRules = D.products.reduce((n,p)=>n+ruleCount(p),0);
+  let h = `<h1>Loan products</h1><div class="stat"><span><b>${D.products.length}</b> products</span><span><b>${nRules}</b> cited rules</span><span><b>${Object.keys(D.circulars).length}</b> circulars indexed</span><span>Updated <b>${esc(fmtD(D.built.slice(0,10)))}</b></span></div>`;
+  for(const [g, ps] of groups()){
+    h += `<h2>${esc(g)}</h2><div class="grid">` + ps.map(p => `<a class="card pcard" href="#/p/${esc(p.id)}"><div class="row" style="justify-content:space-between;gap:6px"><h3 style="margin:0">${esc(p.name)}</h3>${statusBadge(p.status)}</div>
+      <div class="sub" style="font-size:13.5px;margin-top:4px">${esc((p.summary||"").slice(0,170))}${(p.summary||"").length>170?"…":""}</div>
+      <div class="meta">${ruleCount(p)} rules${lowCount(p)?` · <span style="color:var(--warn)">${lowCount(p)} to verify</span>`:""}${(p.defences||[]).length?` · ${(p.defences||[]).length} objection replies`:""}</div></a>`).join("") + `</div>`;
+  }
+  $("#view").innerHTML = h;
+}
+
+function ruleHtml(r){
+  const old = (r.superseded||[]).length ? `<details class="old"><summary>Earlier versions (${r.superseded.length})</summary>${r.superseded.map(o=>`<div class="o">${esc(o.text)}<div>${o.effective?`<span class="muted">from ${esc(fmtD(o.effective))}</span> `:""}${citeChips(o.cite)}</div></div>`).join("")}</details>` : "";
+  return `<div class="rule${r.confidence==="low"?" lowconf":""}"><div class="txt">${esc(r.text)}</div>
+    <div class="foot">${(r.applies_to||[]).map(a=>`<span class="tag">${esc(CT_NAMES[a]||a)}</span>`).join("")}
+    ${r.effective?`<span>w.e.f. ${esc(fmtD(r.effective))}</span>`:""}
+    ${r.confidence==="low"?`<span class="badge warn">Verify</span>`:r.confidence==="medium"?`<span class="badge">Medium confidence</span>`:""}
+    ${citeChips(r.cite)}</div>${old}</div>`;
+}
+function viewProduct(p, params){
+  setTab("home");
+  const ct = params.get("ct") || "";
+  const types = p.customer_types || [];
+  const keep = r => !ct || !(r.applies_to||[]).length || r.applies_to.includes(ct);
+  const secs = (p.sections||[]).slice().sort((a,b)=>SECTION_ORDER.indexOf(a.key)-SECTION_ORDER.indexOf(b.key));
+  const gov = (p.governing||[]).slice().sort((a,b)=>(C(b.cid).d||"").localeCompare(C(a.cid).d||""));
+  let toc = secs.filter(s=>(s.rules||[]).some(keep)).map(s=>`<a href="#sec-${esc(s.key)}" data-jump>${esc(s.title||SECTION_NAMES[s.key]||s.key)}</a>`).join("");
+  if((p.defences||[]).length) toc += `<a href="#sec-def" data-jump>Objections &amp; replies</a>`;
+  if((p.gaps||[]).length) toc += `<a href="#sec-gaps" data-jump>Not specified</a>`;
+  if(gov.length) toc += `<a href="#sec-gov" data-jump>Governing circulars</a>`;
+  let h = `<div class="muted" style="font-size:13px"><a href="#/">Products</a> › ${esc(p.group)}</div>
+   <div class="row" style="justify-content:space-between"><h1>${esc(p.name)}</h1>${statusBadge(p.status)}</div>
+   ${(p.aliases||[]).length?`<div class="muted" style="font-size:13px">Also: ${esc(p.aliases.join(", "))}</div>`:""}
+   <p class="sub">${esc(p.summary||"")}</p>
+   <div class="row noprint"><a class="btn pri" href="#/check/${esc(p.id)}">Check a proposal</a><button class="btn" onclick="print()">Print</button></div>
+   ${types.length>1?`<div class="filters noprint"><button class="${ct?"":"on"}" data-ct="">All customers</button>${types.map(t=>`<button class="${ct===t?"on":""}" data-ct="${esc(t)}">${esc(CT_NAMES[t]||t)}</button>`).join("")}</div>`:""}
+   <div class="layout"><nav class="toc noprint">${toc}</nav><div>`;
+  for(const s of secs){
+    const rs = (s.rules||[]).filter(keep); if(!rs.length) continue;
+    h += `<section class="sec" id="sec-${esc(s.key)}"><h2>${esc(s.title||SECTION_NAMES[s.key]||s.key)}</h2><div class="card">${rs.map(ruleHtml).join("")}</div></section>`;
+  }
+  if((p.defences||[]).length) h += `<section class="sec" id="sec-def"><h2>Objections &amp; replies</h2><div class="card">${p.defences.map(d=>`<div class="def"><div class="q"><b>If they say</b>${esc(d.objection)}</div><div class="a"><b>You reply</b>${esc(d.response)}<div style="margin-top:4px">${citeChips(d.cite)}</div></div></div>`).join("")}</div></section>`;
+  if((p.gaps||[]).length) h += `<section class="sec" id="sec-gaps"><h2>Not specified in circulars</h2><div class="card pad"><ul style="margin:0;padding-left:18px">${p.gaps.map(g=>`<li>${esc(g)}</li>`).join("")}</ul></div></section>`;
+  if(gov.length) h += `<section class="sec" id="sec-gov"><h2>Governing circulars</h2><div class="card tblwrap"><table><tr><th>Circular</th><th>Role</th><th>What it did</th></tr>${gov.map(g=>`<tr><td>${citeChips([{cid:g.cid}])}<div class="muted" style="font-size:12px">${esc(C(g.cid).t)}</div></td><td><span class="badge">${esc(g.role||"")}</span></td><td>${esc(g.note||"")}</td></tr>`).join("")}</table></div></section>`;
+  h += `</div></div>`;
+  $("#view").innerHTML = h;
+  document.querySelectorAll("[data-ct]").forEach(b => b.onclick = () => { location.hash = `#/p/${p.id}` + (b.dataset.ct?`?ct=${b.dataset.ct}`:""); });
+  document.querySelectorAll("[data-jump]").forEach(a => a.onclick = e => { e.preventDefault(); document.getElementById(a.getAttribute("href").slice(1))?.scrollIntoView({behavior:"smooth"}); });
+}
+
+/* ---------- proposal checker ---------- */
+const FIELDS = [
+  ["customer_type","Customer type","select"],["age","Applicant age (years)","num"],["nmi","Net monthly income (₹)","num"],
+  ["gmi","Gross monthly income (₹)","num"],["emis","Existing EMIs per month (₹)","num"],["cibil","CIBIL score (-1 if no history)","num"],
+  ["amount","Loan amount asked (₹)","num"],["tenure_months","Tenure (months)","num"],["roi","Rate of interest (% p.a.)","num"],
+  ["value","Cost of asset / value of security (₹)","num"],["experience_years","Experience in job / business (years)","num"],["annual_income","Gross annual income (₹)","num"]];
+function viewCheck(pid){
+  setTab("check");
+  const opts = groups().map(([g,ps])=>`<optgroup label="${esc(g)}">${ps.map(p=>`<option value="${esc(p.id)}"${p.id===pid?" selected":""}>${esc(p.name)}</option>`).join("")}</optgroup>`).join("");
+  $("#view").innerHTML = `<h1>Proposal checker</h1><p class="sub">Enter the applicant's details. Each numeric rule from the circulars is checked, and you get a note with citations to send back if the proposal is rejected.</p>
+   <select class="big" id="cp" style="max-width:520px;margin:6px 0 14px"><option value="">— Choose a product —</option>${opts}</select><div id="cbody"></div>`;
+  $("#cp").onchange = e => { location.hash = "#/check/" + e.target.value; };
+  const p = D.byId[pid]; if(!p) return;
+  const saved = JSON.parse(store.get("jrb_chk_"+pid) || "{}");
+  const types = p.customer_types?.length ? p.customer_types : Object.keys(CT_NAMES);
+  // variants: "Dimension: option" -> one picker per dimension; plain names go under "Option"
+  const dimOf = x => x.includes(": ") ? x.split(": ")[0] : "Option";
+  const dims = {}; (p.checks||[]).forEach(c => { if(c.variant){ (dims[dimOf(c.variant)] = dims[dimOf(c.variant)] || new Set()).add(c.variant); } });
+  const vSel = Object.entries(dims).map(([d,set],i) => `<div><label for="f_v${i}">${esc(d==="Option"?"Option / variant":d)}</label><select id="f_v${i}" name="v__${esc(d)}"><option value="">Not applicable / skip</option>${[...set].map(x=>`<option value="${esc(x)}"${saved["v__"+d]===x?" selected":""}>${esc(d==="Option"?x:x.slice(d.length+2))}</option>`).join("")}</select></div>`).join("");
+  $("#cbody").innerHTML = `<div class="card pad"><form class="form" id="cf">${vSel}${FIELDS.map(([k,l,t]) => `<div><label for="f_${k}">${esc(l)}</label>${t==="select"
+     ?`<select id="f_${k}" name="${k}">${types.map(x=>`<option value="${esc(x)}"${saved[k]===x?" selected":""}>${esc(CT_NAMES[x]||x)}</option>`).join("")}</select>`
+     :`<input id="f_${k}" name="${k}" inputmode="decimal" value="${esc(saved[k]??"")}">`}</div>`).join("")}<div><label for="f_name">Applicant name (for the note)</label><input id="f_name" name="name" value="${esc(saved.name||"")}"></div></form></div>
+   <h2>Result</h2><div class="card" id="cres"></div>
+   <h2>Note citing the circulars</h2><textarea class="note" id="cnote" readonly></textarea>
+   <div class="row" style="margin-top:8px"><button class="btn pri" id="ccopy">Copy note</button><button class="btn" onclick="print()">Print</button><button class="btn" id="cclear">Clear</button></div>`;
+  const run = () => {
+    const v = Object.fromEntries(new FormData($("#cf")).entries());
+    store.set("jrb_chk_"+pid, JSON.stringify(v));
+    const n = k => (v[k]===""||v[k]==null||isNaN(+v[k])) ? null : +v[k];
+    const val = {customer_type:v.customer_type, age:n("age"), nmi:n("nmi"), cibil:n("cibil"), amount:n("amount"), tenure_months:n("tenure_months"), experience_years:n("experience_years"), annual_income:n("annual_income") ?? (n("gmi")!=null?n("gmi")*12:null)};
+    let emi = null;
+    if(val.amount && val.tenure_months){ const r=(n("roi")||0)/1200, t=val.tenure_months; emi = r ? val.amount*r*Math.pow(1+r,t)/(Math.pow(1+r,t)-1) : val.amount/t; }
+    if(val.age!=null && val.tenure_months) val.age_at_maturity = +(val.age + val.tenure_months/12).toFixed(1);
+    const gmi = n("gmi") ?? n("nmi");
+    if(emi!=null && gmi) val.foir = +(((n("emis")||0)+emi)/gmi*100).toFixed(1);
+    if(val.amount && n("value")){ val.ltv = +(val.amount/n("value")*100).toFixed(1); val.margin = +(100-val.ltv).toFixed(1); }
+    const checks = (p.checks||[]).filter(c => (!(c.applies_to||[]).length || c.applies_to.includes(v.customer_type)) && (!c.variant || v["v__"+dimOf(c.variant)]===c.variant));
+    const out = checks.map(c => {
+      const x = val[c.field]; let ok = null;
+      if(c.field==="customer_type") ok = (c.value||[]).includes(x);
+      else if(x!=null){ const a=c.value;
+        ok = c.op==="min" ? x>=a : c.op==="max" ? x<=a : c.op==="between" ? (x>=a[0]&&x<=a[1]) : c.op==="in" ? (a||[]).includes(x) : null; }
+      return {c, x, ok};
+    });
+    const show = (f,x) => x==null?"not entered": ["amount","nmi","annual_income"].includes(f)?inr(x): ["foir","ltv","margin"].includes(f)?x+"%": x;
+    $("#cres").innerHTML = (emi!=null?`<div class="pad muted" style="font-size:13.5px">Estimated EMI ${inr(Math.round(emi))}${val.foir!=null?` · FOIR ${val.foir}%`:""}${val.ltv!=null?` · LTV ${val.ltv}%`:""}${val.age_at_maturity!=null?` · age at maturity ${val.age_at_maturity}`:""}</div>`:"")
+      + (out.length ? out.map(o=>`<div class="res ${o.ok===true?"pass":o.ok===false?"fail":"na"}"><div class="ic">${o.ok===true?"✓":o.ok===false?"✗":"?"}</div><div><div>${esc(o.c.label)}</div><div class="muted" style="font-size:12.5px">Applicant: ${esc(show(o.c.field,o.x))}</div></div><div>${citeChips(o.c.cite)}</div></div>`).join("")
+      : `<div class="pad muted">This product has no numeric rules in the circulars to check. See the product page for the written rules.</div>`);
+    const L = [];
+    L.push(`Subject: ${p.name}${Object.keys(v).filter(k=>k.startsWith("v__")&&v[k]).map(k=>` (${v[k]})`).join("")}${v.name?` – proposal of ${v.name}`:""}: compliance with bank circulars`);
+    L.push(""); L.push(`The proposal has been checked against the scheme guidelines currently in force:`);
+    out.filter(o=>o.ok===true).forEach(o => L.push(`  ✔ ${o.c.label} — applicant: ${show(o.c.field,o.x)} [${(o.c.cite||[]).map(citeText).join("; ")}]`));
+    const fails = out.filter(o=>o.ok===false);
+    if(fails.length){ L.push(""); L.push("Deviations needing approval or justification:"); fails.forEach(o => L.push(`  ✗ ${o.c.label} — applicant: ${show(o.c.field,o.x)} [${(o.c.cite||[]).map(citeText).join("; ")}]`)); }
+    if((p.defences||[]).length){ L.push(""); L.push("Common objections, answered from the circulars:");
+      p.defences.forEach(d => L.push(`  • ${d.objection}\n    → ${d.response} [${(d.cite||[]).map(citeText).join("; ")}]`)); }
+    if((p.gaps||[]).length){ L.push(""); L.push("The following are not prescribed in the scheme circulars and therefore cannot by themselves be grounds for rejection:"); p.gaps.forEach(g=>L.push("  • "+g)); }
+    L.push(""); L.push(`If the proposal is to be declined, the specific clause of the circular relied on may kindly be quoted.`);
+    L.push(`(Prepared from circulars indexed up to ${fmtD(D.built.slice(0,10))}.)`);
+    $("#cnote").value = L.join("\n");
+  };
+  $("#cf").addEventListener("input", run); run();
+  $("#ccopy").onclick = () => copy($("#cnote").value);
+  $("#cclear").onclick = () => { store.del("jrb_chk_"+pid); viewCheck(pid); };
+}
+
+/* ---------- rates ---------- */
+function viewRates(){
+  setTab("rates");
+  const R = D.rates, G = D.gold || [];
+  const bench = D.byId["interest-rate-benchmarks"];
+  let h = `<h1>Rates &amp; gold value</h1>`;
+  if(R){
+    const m = R.mclr || {};
+    h += `<h2>Benchmark rates <span class="muted" style="font-size:13px;font-weight:400">as on ${esc(fmtD(R.as_of))}</span> ${R.cid?citeChips([{cid:R.cid}]):""}</h2>
+      <div class="card tblwrap"><table><tr><th>Benchmark</th><th style="text-align:right">Rate %</th></tr>
+      ${Object.entries(m).map(([k,x])=>`<tr><td>MCLR ${esc(k)}</td><td class="num">${esc(x)}</td></tr>`).join("")}
+      ${["eblr","repo","base_rate","bplr"].filter(k=>R[k]!=null).map(k=>`<tr><td>${esc({eblr:"EBLR",repo:"RBI repo",base_rate:"Base rate",bplr:"BPLR"}[k])}</td><td class="num">${esc(R[k])}</td></tr>`).join("")}</table></div>
+      ${R.note?`<p class="muted" style="font-size:13px">${esc(R.note)}</p>`:""}`;
+    if((R.history||[]).length) h += `<details class="old" style="margin-top:8px"><summary>Earlier rates (${R.history.length})</summary><div class="card tblwrap" style="margin-top:6px"><table><tr><th>As on</th><th>MCLR 1Y</th><th>EBLR</th><th>Base</th><th>Ref</th></tr>${R.history.map(x=>`<tr><td>${esc(fmtD(x.as_of))}</td><td>${esc(x.mclr?.["1y"]??"")}</td><td>${esc(x.eblr??"")}</td><td>${esc(x.base_rate??"")}</td><td>${x.cid?citeChips([{cid:x.cid}]):""}</td></tr>`).join("")}</table></div></details>`;
+  }
+  if(bench) h += `<p><a class="btn" href="#/p/interest-rate-benchmarks">Rate card for each product →</a></p>`;
+  if(G.length){
+    const g = G[0];
+    h += `<h2>Gold value: ${esc(g.month)} ${g.note?`<span class="badge warn">${esc(g.note)}</span>`:""} ${citeChips([{cid:g.cid}])}</h2>
+      <div class="card tblwrap"><table><tr><th>Purity</th><th style="text-align:right">₹ per gram</th></tr>${(g.rates||[]).map(r=>`<tr><td>${esc(r.purity)}</td><td class="num">${esc(Number(r.per_gram).toLocaleString("en-IN"))}</td></tr>`).join("")}</table></div>
+      <h2>Previous months</h2><div class="card tblwrap"><table><tr><th>Month</th>${(g.rates||[]).map(r=>`<th style="text-align:right">${esc(r.purity)}</th>`).join("")}<th>Ref</th></tr>
+      ${G.slice(1).map(x=>`<tr><td>${esc(x.month)}${x.note?` <span class="badge warn">${esc(x.note)}</span>`:""}</td>${(g.rates||[]).map(r=>{const y=(x.rates||[]).find(z=>z.purity===r.purity);return `<td class="num">${y?esc(Number(y.per_gram).toLocaleString("en-IN")):""}</td>`}).join("")}<td>${citeChips([{cid:x.cid}])}</td></tr>`).join("")}</table></div>`;
+  }
+  if(!R && !G.length) h += `<p class="muted">No rate data yet.</p>`;
+  $("#view").innerHTML = h;
+}
+
+/* ---------- what's new ---------- */
+function viewNew(){
+  setTab("new");
+  const CL = D.changelog || [];
+  const recent = Object.entries(D.circulars).filter(([,c])=>c.d).sort((a,b)=>b[1].d.localeCompare(a[1].d)).slice(0,60);
+  let h = `<h1>What's new</h1>`;
+  if(CL.length) h += `<h2>Automatic updates</h2><div class="card">${CL.slice(0,30).map(x=>`<div class="rule"><div><b>${esc(fmtD(x.date))}</b> · ${esc(x.summary||"")}</div>
+    ${(x.products||[]).length?`<div class="foot">Updated: ${x.products.map(id=>D.byId[id]?`<a href="#/p/${esc(id)}">${esc(D.byId[id].name)}</a>`:esc(id)).join(", ")}</div>`:""}
+    ${(x.circulars||[]).length?`<div class="foot">${citeChips(x.circulars.map(cid=>({cid})))}</div>`:""}</div>`).join("")}</div>`;
+  h += `<h2>Latest circulars</h2><div class="card">${recent.map(([id,c])=>`<div class="hit" onclick="location.hash='#/c/${esc(id)}'"><b>${esc(c.l)}</b><div class="sn">${esc(c.t)}</div></div>`).join("")}</div>`;
+  $("#view").innerHTML = h;
+}
+
+/* ---------- search ---------- */
+function norm(s){ return String(s||"").toLowerCase(); }
+function snippet(text, terms, len=180){
+  const t = text.replace(/=== PAGE \d+ ===/g," "); const lo = t.toLowerCase();
+  let i = -1; for(const w of terms){ i = lo.indexOf(w); if(i>=0) break; }
+  const s = Math.max(0, i - 60); let sn = esc(t.slice(s, s+len).replace(/\s+/g," "));
+  for(const w of terms) if(w.length>1) sn = sn.replace(new RegExp(w.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"gi"), m=>`<mark>${m}</mark>`);
+  return (s>0?"…":"")+sn+"…";
+}
+function pageOf(text, term){ const i = text.toLowerCase().indexOf(term); if(i<0) return null; const m = [...text.slice(0,i).matchAll(/=== PAGE (\d+) ===/g)].pop(); return m?m[1]:null; }
+async function viewSearch(q){
+  setTab("search");
+  if($("#q").value !== q) $("#q").value = q;
+  const terms = norm(q).split(/\s+/).filter(Boolean);
+  let h = `<h1>Search</h1>`;
+  if(!terms.length){ $("#view").innerHTML = h + `<p class="sub">Type in the search box above. Results come from product rules, objection replies and the full text of every circular.</p>`; return; }
+  const ruleHits = [];
+  for(const p of D.products){
+    const nameHit = terms.every(w => norm(p.name+" "+(p.aliases||[]).join(" ")+" "+p.group).includes(w));
+    if(nameHit) ruleHits.push({p, kind:"product", text:p.summary||""});
+    for(const s of p.sections||[]) for(const r of s.rules||[]) if(terms.every(w=>norm(r.text).includes(w))) ruleHits.push({p, kind:SECTION_NAMES[s.key]||s.key, text:r.text, cite:r.cite});
+    for(const d of p.defences||[]) if(terms.every(w=>norm(d.objection+" "+d.response).includes(w))) ruleHits.push({p, kind:"Objection reply", text:d.objection+" → "+d.response, cite:d.cite});
+  }
+  h += `<h2>In product rules (${ruleHits.length})</h2><div class="card">${ruleHits.slice(0,80).map(x=>`<div class="hit" onclick="location.hash='#/p/${esc(x.p.id)}'"><b>${esc(x.p.name)}</b> <span class="badge">${esc(x.kind)}</span><div class="sn">${snippet(x.text, terms, 240)}</div></div>`).join("") || `<div class="pad muted">No matching rules.</div>`}</div>`;
+  h += `<h2>In circular text</h2><div class="card" id="fts"><div class="pad muted"><span class="spinner"></span> Loading full text (first time only)…</div></div>`;
+  $("#view").innerHTML = h;
+  try{
+    const T = await loadTexts(); if(location.hash.indexOf("#/search")!==0) return;
+    const hits = [];
+    for(const [id,c] of Object.entries(D.circulars)){
+      const txt = (T[id]||""); const blob = norm(c.t+" "+txt);
+      if(terms.every(w=>blob.includes(w))){ const titleHit = terms.every(w=>norm(c.t).includes(w)); hits.push({id,c,txt,score:(titleHit?2:0)}); }
+    }
+    hits.sort((a,b)=>b.score-a.score || (b.c.d||"").localeCompare(a.c.d||""));
+    $("#fts").innerHTML = hits.length ? `<div class="pad muted" style="font-size:13px">${hits.length} circulars, newest first</div>` + hits.slice(0,150).map(x=>{const pg=pageOf(x.txt,terms[0]);
+      return `<div class="hit" onclick="location.hash='#/c/${esc(x.id)}?q=${encodeURIComponent(q)}${pg?`&pg=${pg}`:""}'"><b>${esc(x.c.l)}</b> — ${esc(x.c.t)}<div class="sn">${x.txt?snippet(x.txt,terms):"(title match; scanned copy)"}</div></div>`}).join("") : `<div class="pad muted">No circular contains all these words.</div>`;
+  }catch(e){ $("#fts").innerHTML = `<div class="pad err">${esc(e.message)}</div>`; }
+}
+
+/* ---------- circular reader ---------- */
+async function viewCircular(cid, params){
+  setTab("search");
+  const c = D.circulars[cid]; if(!c){ $("#view").innerHTML = `<p>Unknown circular.</p>`; return; }
+  const used = D.products.filter(p => JSON.stringify(p).includes(cid));
+  $("#view").innerHTML = `<div class="muted" style="font-size:13px"><a href="javascript:history.back()">‹ Back</a></div><h1>${esc(c.l)}</h1><p class="sub">${esc(c.t)}</p>
+    <div class="path">${esc(D.root + c.r.replace(/\//g,"\\"))}</div>
+    <div class="row" style="margin:8px 0"><button class="btn" data-copy="${esc(D.root + c.r.replace(/\//g,"\\"))}">Copy file path</button></div>
+    ${used.length?`<p class="sub" style="font-size:13.5px">Used in: ${used.map(p=>`<a href="#/p/${esc(p.id)}">${esc(p.name)}</a>`).join(", ")}</p>`:""}
+    <div class="card" id="rd"><div class="pad muted"><span class="spinner"></span> Loading text…</div></div>`;
+  try{
+    const T = await loadTexts(); const txt = T[cid];
+    if(!txt){ $("#rd").innerHTML = `<div class="pad muted">${c.m==="scanned"?"This circular is a scanned copy with no text layer. Open the original PDF from the file path above.":"Full text not included for this circular (not loan-related). Open the original from the file path above."}</div>`; return; }
+    const q = norm(params.get("q")||""), terms = q.split(/\s+/).filter(w=>w.length>1), pg = params.get("pg");
+    const pages = txt.split(/=== PAGE (\d+) ===/).slice(1);
+    let h = ""; for(let i=0;i<pages.length;i+=2){ let body = esc(pages[i+1].trim());
+      for(const w of terms) body = body.replace(new RegExp(w.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"gi"), m=>`<mark>${m}</mark>`);
+      h += `<div class="page${pages[i]===pg?" target":""}" id="pg-${pages[i]}"><span class="pn">PAGE ${pages[i]}</span>${body}</div>`; }
+    $("#rd").innerHTML = h || `<div class="pad muted">Empty.</div>`;
+    if(pg) document.getElementById("pg-"+pg)?.scrollIntoView();
+  }catch(e){ $("#rd").innerHTML = `<div class="pad err">${esc(e.message)}</div>`; }
+}
+
+function viewAbout(){
+  setTab("about");
+  $("#view").innerHTML = `<h1>About this rulebook</h1><div class="card pad">
+   <p>Rules are taken from the bank's circulars and circular letters. Every rule cites the circular, its date and the page it comes from. Tap a citation to see the exact wording.</p>
+   <p><b>Latest rule wins.</b> When a later circular changes a rule, the old version moves to "Earlier versions".</p>
+   <p><b>Verify</b> marks rules where the source was unclear, scanned or conflicting. Check the original circular before relying on these.</p>
+   <p>The rulebook updates automatically once a week from the circulars folder. Data built <b>${esc(D.built)}</b>.</p>
+   <p class="muted" style="font-size:13px">Always confirm against the original circular before you quote it officially.</p>
+   <div class="row"><button class="btn" id="lock">Lock &amp; forget password on this device</button></div></div>`;
+  $("#lock").onclick = () => { store.del("jrb_pw"); location.reload(); };
+}
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
