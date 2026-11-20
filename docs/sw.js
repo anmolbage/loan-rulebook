@@ -1,5 +1,5 @@
 // Offline cache: app shell + encrypted data. Network first, so new builds show up as soon as you're online.
-const CACHE = "jrb-v1";
+const CACHE = "jrb-v2";
 const FILES = ["./", "index.html", "data.enc", "search.enc", "manifest.webmanifest", "icon.svg"];
 self.addEventListener("install", e => { self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES).catch(() => {}))); });
 self.addEventListener("activate", e => e.waitUntil(self.clients.claim()));

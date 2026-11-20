@@ -329,7 +329,13 @@ function viewCheck(pid){
   // variants: "Dimension: option" -> one picker per dimension; plain names go under "Option"
   const dimOf = x => x.includes(": ") ? x.split(": ")[0] : "Option";
   const dims = {}; (p.checks||[]).forEach(c => { if(c.variant){ (dims[dimOf(c.variant)] = dims[dimOf(c.variant)] || new Set()).add(c.variant); } });
-  const vSel = Object.entries(dims).map(([d,set],i) => `<div><label for="f_v${i}">${esc(d==="Option"?"Option / variant":d)}</label><select id="f_v${i}" name="v__${esc(d)}"><option value="">Not applicable / skip</option>${[...set].map(x=>`<option value="${esc(x)}"${saved["v__"+d]===x?" selected":""}>${esc(d==="Option"?x:x.slice(d.length+2))}</option>`).join("")}</select></div>`).join("");
+  // slab auto-pick: a dimension whose every option has a numeric range in p.variant_slabs
+  const VS = p.variant_slabs || {};
+  const dimNames = Object.keys(dims);
+  const isAuto = d => [...dims[d]].every(o => VS[o]);
+  const optLabel = (d,x) => d==="Option" ? x : x.slice(d.length+2);
+  const vSel = dimNames.map((d,i) => { const set = dims[d], auto = isAuto(d), sv = saved["v__"+d];
+    return `<div><label for="f_v${i}">${esc(d==="Option"?"Option / variant":d)}</label><select id="f_v${i}" name="v__${esc(d)}">${auto?`<option value="__auto"${!sv||sv==="__auto"?" selected":""}>Auto (from figures)</option>`:""}<option value=""${auto&&sv===""?" selected":""}>Not applicable / skip</option>${[...set].map(x=>`<option value="${esc(x)}"${sv===x?" selected":""}>${esc(optLabel(d,x))}</option>`).join("")}</select>${auto?`<div class="muted" id="h_v${i}" style="font-size:12px;margin-top:3px"></div>`:""}</div>`; }).join("");
   $("#cbody").innerHTML = `<div class="card pad"><form class="form" id="cf">${vSel}${FIELDS.map(([k,l,t]) => `<div><label for="f_${k}">${esc(l)}</label>${t==="select"
      ?`<select id="f_${k}" name="${k}">${types.map(x=>`<option value="${esc(x)}"${saved[k]===x?" selected":""}>${esc(CT_NAMES[x]||x)}</option>`).join("")}</select>`
      :`<input id="f_${k}" name="${k}" inputmode="decimal" value="${esc(saved[k]??"")}">`}</div>`).join("")}<div><label for="f_name">Applicant name (for the note)</label><input id="f_name" name="name" value="${esc(saved.name||"")}"></div></form></div>
@@ -340,14 +346,26 @@ function viewCheck(pid){
     const v = Object.fromEntries(new FormData($("#cf")).entries());
     store.set("jrb_chk_"+pid, JSON.stringify(v));
     const n = k => (v[k]===""||v[k]==null||isNaN(+v[k])) ? null : +v[k];
-    const val = {customer_type:v.customer_type, age:n("age"), nmi:n("nmi"), cibil:n("cibil"), amount:n("amount"), tenure_months:n("tenure_months"), experience_years:n("experience_years"), annual_income:n("annual_income") ?? (n("gmi")!=null?n("gmi")*12:null)};
+    const val = {customer_type:v.customer_type, age:n("age"), nmi:n("nmi"), cibil:n("cibil"), amount:n("amount"), tenure_months:n("tenure_months"), experience_years:n("experience_years"), annual_income:n("annual_income") ?? (n("gmi")!=null?n("gmi")*12:(n("nmi")!=null?n("nmi")*12:null))};
     let emi = null;
     if(val.amount && val.tenure_months){ const r=(n("roi")||0)/1200, t=val.tenure_months; emi = r ? val.amount*r*Math.pow(1+r,t)/(Math.pow(1+r,t)-1) : val.amount/t; }
     if(val.age!=null && val.tenure_months) val.age_at_maturity = +(val.age + val.tenure_months/12).toFixed(1);
     const gmi = n("gmi") ?? n("nmi");
     if(emi!=null && gmi) val.foir = +(((n("emis")||0)+emi)/gmi*100).toFixed(1);
     if(val.amount && n("value")){ val.ltv = +(val.amount/n("value")*100).toFixed(1); val.margin = +(100-val.ltv).toFixed(1); }
-    const checks = (p.checks||[]).filter(c => (!(c.applies_to||[]).length || c.applies_to.includes(v.customer_type)) && (!c.variant || v["v__"+dimOf(c.variant)]===c.variant));
+    const slabVal = {amount:val.amount, nmi:val.nmi, nai: val.nmi!=null ? val.nmi*12 : val.annual_income, age:val.age, experience_years:val.experience_years};
+    const FN = {amount:"loan amount", nmi:"net monthly income", nai: val.nmi!=null ? "net annual income (NMI × 12)" : "annual income", age:"age", experience_years:"experience"};
+    const fmtS = (f,x) => ["amount","nmi","nai"].includes(f) ? inr(Math.round(x)) : x;
+    const chosen = {};
+    dimNames.forEach((d,i) => { let sel = v["v__"+d] || ""; const h = $("#h_v"+i);
+      if(sel==="__auto"){ const opts=[...dims[d]], f=VS[opts[0]].field, x=slabVal[f];
+        const m = x==null ? null : opts.find(o => { const r=VS[o]; return (r.gt==null||x>r.gt) && (r.le==null||x<=r.le); });
+        sel = m || "";
+        if(h) h.textContent = x==null ? `Enter ${FN[f]} to pick the slab` : m ? `Picked: ${optLabel(d,m)} (${FN[f]} ${fmtS(f,x)})` : `No slab in the circular covers ${FN[f]} ${fmtS(f,x)}`;
+        if(h) h.style.color = x!=null && !m ? "var(--bad)" : "";
+      } else if(h) h.textContent = "";
+      chosen[d] = sel; });
+    const checks = (p.checks||[]).filter(c => (!(c.applies_to||[]).length || c.applies_to.includes(v.customer_type)) && (!c.variant || chosen[dimOf(c.variant)]===c.variant));
     const out = checks.map(c => {
       const x = val[c.field]; let ok = null;
       if(c.field==="customer_type") ok = (c.value||[]).includes(x);
@@ -360,7 +378,7 @@ function viewCheck(pid){
       + (out.length ? out.map(o=>`<div class="res ${o.ok===true?"pass":o.ok===false?"fail":"na"}"><div class="ic">${o.ok===true?"✓":o.ok===false?"✗":"?"}</div><div><div>${esc(o.c.label)}</div><div class="muted" style="font-size:12.5px">Applicant: ${esc(show(o.c.field,o.x))}</div></div><div>${citeChips(o.c.cite)}</div></div>`).join("")
       : `<div class="pad muted">This product has no numeric rules in the circulars to check. See the product page for the written rules.</div>`);
     const L = [];
-    L.push(`Subject: ${p.name}${Object.keys(v).filter(k=>k.startsWith("v__")&&v[k]).map(k=>` (${v[k]})`).join("")}${v.name?` – proposal of ${v.name}`:""}: compliance with bank circulars`);
+    L.push(`Subject: ${p.name}${Object.values(chosen).filter(Boolean).map(x=>` (${x})`).join("")}${v.name?` – proposal of ${v.name}`:""}: compliance with bank circulars`);
     L.push(""); L.push(`The proposal has been checked against the scheme guidelines currently in force:`);
     out.filter(o=>o.ok===true).forEach(o => L.push(`  ✔ ${o.c.label} — applicant: ${show(o.c.field,o.x)} [${(o.c.cite||[]).map(citeText).join("; ")}]`));
     const fails = out.filter(o=>o.ok===false);

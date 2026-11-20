@@ -63,6 +63,8 @@ If a limit differs by slab (e.g. income slab -> FOIR), add one check per slab an
 
 **Variants.** When checks belong to mutually exclusive options of the same product (repayment option EMI vs bullet, scheme variant, purpose such as purchase vs construction, location metro/urban/rural, loan-amount slab), add `"variant": "<short option name>"` to each such check. The checker lets the user pick one variant and skips checks of other variants. Checks without `variant` always apply. Use identical spelling for the same variant across checks. If a product has several independent dimensions (e.g. loan-amount slab and income slab), prefix the variant with the dimension: `"LTV slab: up to Rs 20 lakh"`, `"Income slab: NMI above Rs 50,000"`; the checker shows one picker per dimension.
 
+**Slab auto-pick.** When a variant is defined by a number (loan amount, net annual income, net monthly income, age, experience), add to the product `"variant_slabs": {"<exact variant name>": {"field": "amount|nai|nmi|age|experience_years", "gt": <exclusive lower bound, optional>, "le": <inclusive upper bound, optional>}}`. `nai` = net annual income (NMI x 12). The checker then selects the slab automatically when every option of that dimension has an entry.
+
 ## Rules for extraction
 1. The latest circular in force wins. A later circular/circular letter that revises ROI, fees, eligibility etc. replaces the earlier rule; move the old one into `superseded`.
 2. Campaign concessions (processing-fee waiver, special ROI) go in section `campaign` with their validity period stated in `text`; set `status` of the rule text to make clear whether the validity date has passed (today is 2026-11-20).
